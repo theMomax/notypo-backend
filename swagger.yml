@@ -1,0 +1,128 @@
+consumes:
+- application/json
+info:
+  title: notypo streaming-api
+  description: The REST and Websocket api of the notypo-game. This documentation only addresses the functional part of the api. I.e. the "responses" section does not list default error codes like 400 and 500.
+  version: alpha
+paths: {}
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"
+tags:
+  - name: stream management
+    description: These operations are used to manage Streams. A Stream is defined by its Source, which is responsible for the Stream's content. Each connection to a Stream delivers the exact same content in the exact same order. Two Streams created from the same Source may have a different content. A Stream is deleted, when, ether a configurable amount of time has passed, since the last connection to the Stream had been established, or when the last connection to a Stream is closed. Connections to Streams can be closed via a request. A connection to a Stream is closed by the server after a configurable duration.
+definitions:
+    VersionResponse:
+      type: object
+      required:
+        - version
+        - git_commit
+        - build_time
+      properties:
+        version:
+          type: string
+          example: v1.0
+        git_commit:
+          type: string
+          example: 7690b981d5928b3cafb8783c3269e0b42dd73882
+        build_time:
+          type: string
+          format: date-time
+          example: 2019-03-07 19:51:58
+    StreamSupplierDescription:
+      type: object
+      required:
+        - type
+        - charset
+      properties:
+        type:
+          description: The general type of the Stream.
+          type: integer
+        charset:
+          description: The charset, the created Stream is limited to.
+          type: array
+          items:
+            type: integer
+          example: [97, 98, 99, 100]
+    StreamID:
+      type: integer
+      format: int64
+      description: A unique identifier of a Stream.
+      example: 12941492147898191753
+    StreamConnectionID:
+      type: integer
+      format: int64
+      description: A unique identifier of a connectio to a Stream.
+      example: 12941492147898191754
+paths:
+  /version:
+    get:
+      tags:
+        - versioning
+      summary: Shows information about verison and build-time.
+      description: Shows information about verison and build-time.
+      responses:
+        200:
+          description: This build is a valid production-build.
+          schema:
+            $ref: "#/definitions/VersionResponse"
+        503:
+          description: This build is a test-build.
+  /stream:
+    post:
+      tags:
+        - stream management
+      summary: Creates a Stream.
+      description: Creates a Stream, that fullfills the given requirements.
+      parameters:
+        - name: Description
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/StreamSupplierDescription"
+      responses:
+        200:
+          description: The information describing the type and properties of the requested Stream is valid. The Stream has been created successfully.
+          schema:
+            $ref: "#/definitions/StreamID"
+        501:
+          description: The server doesn't know the requested stream-type.
+  /stream/{id}:
+    get:
+      tags:
+        - stream management
+      summary: Opens a connection to a Stream.
+      description: Opens a connection to a Stream, which streams the Stream's content from its beginning to the end, or until the connection is closed.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+          description: A uinque identifier of a Stream.
+          example: 12941492147898191753
+      responses:
+        200:
+          description: The requested Stream was found. The connection has been opened.
+          schema:
+            $ref: "#/definitions/StreamConnectionID"
+        404:
+          description: The requested Stream doesn't exist.
+    delete:
+      tags:
+        - stream management
+      summary: Closes a connection to a Stream.
+      description: Closes a connection to a Stream, if the connection exists. If this connection is the only connection to the regarded Stream the Stream is deleted.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+          description: A unique identifier of a connection to a Stream.
+          example: 12941492147898191754
+      responses:
+        200:
+          description: The described connection was ether closed, or it didn't exist.
