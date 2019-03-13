@@ -7,6 +7,7 @@ package config
 
 import (
 	"log"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -56,6 +57,8 @@ type ServerConfig struct {
 	Port int    `ini:"port"`
 	// (production = 1; development = 2)
 	Mode int `ini:"mode"`
+	// add "*", if you want to allow any origin
+	AllowedRequestOrigins []string `ini:"allowed_request_origins"`
 }
 
 // SSLConfig holds the path to the ssl-certificate
@@ -99,6 +102,11 @@ func Options() []cli.Flag {
 			Name:  "server_mode, m",
 			Value: ConfigDependant,
 			Usage: "mode controls the servers bahavior on errors - production (1), development (2) or version-dependant (everything else)",
+		},
+		cli.StringSliceFlag{
+			Name:  "server_allowed_request_origins",
+			Value: &cli.StringSlice{ConfigDependant},
+			Usage: "allowed_request_origins contains all url's, which may send requests to this server (format: http://localhost:8080) (add * to allow any source)",
 		},
 		cli.StringFlag{
 			Name:  "ssl_path, s",
@@ -149,6 +157,17 @@ func Load(ctx *cli.Context) error {
 			config.SC.Mode, err = strconv.Atoi(ctx.String("server_mode"))
 			if err != nil {
 				log.Fatal("invalid server_mode flag")
+			}
+		}
+		if len(ctx.StringSlice("server_allowed_request_origins")) > 1 {
+			config.SC.AllowedRequestOrigins = ctx.StringSlice("server_allowed_request_origins")
+			for _, s := range config.SC.AllowedRequestOrigins[1:] {
+				if s != "*" {
+					_, err := url.ParseRequestURI(s)
+					if err != nil {
+						log.Fatal("invalid server_allowed_request_origins flag " + "(" + s + ")")
+					}
+				}
 			}
 		}
 		if ctx.String("ssl_path") != ConfigDependant {

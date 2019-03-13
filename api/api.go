@@ -28,6 +28,10 @@ func Serve() {
 	com.Serve()
 }
 
+// -----------------------------------------------------------------------------
+// GET /version
+// -----------------------------------------------------------------------------
+
 // VersionResponse holds general information about this program
 type VersionResponse struct {
 	Version   string `json:"version"`
@@ -66,7 +70,6 @@ type StreamSourceType int
 // StreamSupplierDescription (request) specifies the type and properties of a
 // StreamSupplier
 type StreamSupplierDescription struct {
-	// Example: 1
 	Type    StreamSourceType `json:"type"`
 	Charset []rune           `json:"charset"`
 }

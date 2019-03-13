@@ -2,6 +2,7 @@ module github.com/theMomax/notypo-backend
 
 require (
 	github.com/google/pprof v0.0.0-20190228041337-2ef8d84b2e3c // indirect
+	github.com/gorilla/handlers v1.4.0
 	github.com/gorilla/mux v1.7.0
 	github.com/gorilla/websocket v1.4.0
 	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect

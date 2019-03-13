@@ -2,8 +2,10 @@ language: go
 
 go:
   - 1.12
+  - tip
 
 install:
   - make setup
 script:
+  - make test
   - make build

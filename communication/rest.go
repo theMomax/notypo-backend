@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/theMomax/notypo-backend/config"
 )
@@ -67,7 +68,11 @@ var router = mux.NewRouter()
 
 // Serve starts the REST-api and websocket server
 func Serve() {
-	http.ListenAndServe(config.Server.IP+":"+strconv.Itoa(config.Server.Port), router)
+	http.ListenAndServe(config.Server.IP+":"+strconv.Itoa(config.Server.Port), handlers.CORS(
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowedOrigins(config.Server.AllowedRequestOrigins),
+		handlers.AllowedHeaders([]string{"Content-Type"}),
+	)(router))
 }
 
 // Get registers a handler for the http GET method
@@ -96,6 +101,7 @@ func Get(path string, handler HandleGetFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		out := hV.Call([]reflect.Value{reflect.ValueOf(mux.Vars(r))})
 		response := out[1].Interface()
 		bytes, err := json.Marshal(response)
@@ -140,6 +146,7 @@ func Post(path string, handler HandlePostFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var err error
 		request := reflect.New(requestT)
 		if parseRequest {
@@ -193,6 +200,7 @@ func Put(path string, handler HandlePutFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var err error
 		request := reflect.New(requestT)
 		if parseRequest {
@@ -239,6 +247,7 @@ func Delete(path string, handler HandleDeleteFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var err error
 		request := reflect.New(requestT)
 		if parseRequest {
@@ -287,6 +296,7 @@ func Options(path string, handler HandleOptionsFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		out := hV.Call([]reflect.Value{reflect.ValueOf(mux.Vars(r))})
 		response := out[1].Interface()
 		bytes, err := json.Marshal(response)
