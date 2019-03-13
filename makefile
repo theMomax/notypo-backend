@@ -12,8 +12,14 @@ help: ## This help dialog.
 		printf "%-30s %s\n" $$help_command $$help_info ; \
 	done
 
-setup: ## Prepares the environment for running the server. This includes:
+setup: gosetup configsetup ## Prepares the environment for running the server. This includes:
+##					 - Downloading the go dependencies
 ##					 - Copying the default.config.ini to the default config_path (config.ini)
+
+gosetup: ## Runs go mod download
+	go mod download
+
+configsetup: ## Copies the default.config.ini to the default config_path (config.ini).
 	test -f config.ini || cp default.config.ini config.ini
 
 test: ## Runs all package-tests.
