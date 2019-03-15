@@ -53,5 +53,6 @@ func TestStreamClosing(t *testing.T) {
 	id := Register(src)
 	sid, _ := Open(id)
 	Close(sid)
-	assert.Nil(t, Get(sid))
+	_, ok := Get(sid)
+	assert.False(t, ok)
 }

@@ -75,6 +75,12 @@ func Serve() {
 	)(router))
 }
 
+// Router returns the router used in this package. This function should only be
+// used by tests
+func Router() *mux.Router {
+	return router
+}
+
 // Get registers a handler for the http GET method
 func Get(path string, handler HandleGetFunc) {
 	// assert, that the given handler meets the requirements of a HandleGetFunc
@@ -101,7 +107,6 @@ func Get(path string, handler HandleGetFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		out := hV.Call([]reflect.Value{reflect.ValueOf(mux.Vars(r))})
 		response := out[1].Interface()
 		bytes, err := json.Marshal(response)
@@ -146,7 +151,6 @@ func Post(path string, handler HandlePostFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var err error
 		request := reflect.New(requestT)
 		if parseRequest {
@@ -200,7 +204,6 @@ func Put(path string, handler HandlePutFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var err error
 		request := reflect.New(requestT)
 		if parseRequest {
@@ -247,7 +250,6 @@ func Delete(path string, handler HandleDeleteFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var err error
 		request := reflect.New(requestT)
 		if parseRequest {
@@ -296,7 +298,6 @@ func Options(path string, handler HandleOptionsFunc) {
 	// register type-safe handler
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		out := hV.Call([]reflect.Value{reflect.ValueOf(mux.Vars(r))})
 		response := out[1].Interface()
 		bytes, err := json.Marshal(response)

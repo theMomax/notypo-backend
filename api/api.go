@@ -19,13 +19,17 @@ import (
 
 // Serve starts the webserver which implements the api specified in this file
 func Serve() {
+	com.Serve()
+}
+
+// Register registers the api-functions specified in this file at the
+// http/websocket communication-unit
+func Register() {
 	com.Get("/version", version)
 	com.Post("/stream", createStream)
 	com.Get("/stream/{id}", openStream)
 	com.Delete("/stream/{id}", closeStream)
-	com.Stream("(/stream/websocket/{id}", getStream)
-
-	com.Serve()
+	com.Stream("/stream/websocket/{id}", getStream)
 }
 
 // -----------------------------------------------------------------------------
@@ -57,15 +61,15 @@ func version(params map[string]string) (status int, res *VersionResponse) {
 const (
 	// Random StreamSources provide an endless Stream of streams.Characters. The
 	// Characters are randomly picked from a given charset
-	Random StreamSourceType = iota
+	Random StreamSourceType = "Random"
 	// Dictionary StreamSources provide an endless Stream of streams.Characters.
 	// The Characters form words, wich are randomly picked from a dictionary's
 	// subset, wich only consists of a given charset
-	Dictionary
+	Dictionary StreamSourceType = "Dictionary"
 )
 
 // StreamSourceType is a code for a specific type of streams.StreamSource
-type StreamSourceType int
+type StreamSourceType string
 
 // StreamSupplierDescription (request) specifies the type and properties of a
 // StreamSupplier
@@ -75,7 +79,7 @@ type StreamSupplierDescription struct {
 }
 
 // StreamSupplierID (response)
-type StreamSupplierID *uint64
+type StreamSupplierID *int64
 
 func createStream(req *StreamSupplierDescription, params map[string]string) (status int, res StreamSupplierID) {
 	var source streams.StreamSource
@@ -105,10 +109,10 @@ func (c character) Rune() rune {
 // -----------------------------------------------------------------------------
 
 // StreamID (response)
-type StreamID *uint64
+type StreamID *int64
 
 func openStream(params map[string]string) (status int, res StreamID) {
-	id, err := strconv.ParseUint(params["id"], 10, 64)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
 	if err != nil {
 		return http.StatusBadRequest, nil
 	}
@@ -124,7 +128,7 @@ func openStream(params map[string]string) (status int, res StreamID) {
 // -----------------------------------------------------------------------------
 
 func closeStream(req interface{}, params map[string]string) (status int, res interface{}) {
-	id, err := strconv.ParseUint(params["id"], 10, 64)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
 	if err != nil {
 		return http.StatusBadRequest, nil
 	}
@@ -133,16 +137,17 @@ func closeStream(req interface{}, params map[string]string) (status int, res int
 }
 
 // -----------------------------------------------------------------------------
-// GET /stream/websocket/{id}
+// GET/WEBSOCKET /stream/websocket/{id}
 // -----------------------------------------------------------------------------
 
 func getStream(params map[string]string) (status int, stream streams.Stream) {
-	id, err := strconv.ParseUint(params["id"], 10, 64)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
 	if err != nil {
 		return http.StatusBadRequest, nil
 	}
-	stream = streams.Get(id)
-	if stream == nil {
+	var ok bool
+	stream, ok = streams.Get(id)
+	if !ok || stream == nil {
 		return http.StatusNotFound, nil
 	}
 	return http.StatusOK, stream

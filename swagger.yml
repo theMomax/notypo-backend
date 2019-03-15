@@ -2,7 +2,7 @@ consumes:
 - application/json
 info:
   title: notypo streaming-api
-  description: The REST and Websocket api of the notypo-game. This documentation only addresses the functional part of the api. I.e. the "responses" section does not list default error codes like 400 and 500.
+  description: "The REST and Websocket api of the [notypo-game](https://www.github.com/theMomax/notypo). This documentation only addresses the functional part of the api. I.e. the **Responses** sections do not list default error codes like 400 and 500. This api allows CORS from a configurable list of URLs. The only `Content-Type` allowed is `application/json`."
   version: alpha
 paths: {}
 produces:
@@ -12,7 +12,7 @@ schemes:
 swagger: "2.0"
 tags:
   - name: stream management
-    description: These operations are used to manage Streams. A Stream is defined by its Source, which is responsible for the Stream's content. Each connection to a Stream delivers the exact same content in the exact same order. Two Streams created from the same Source may have a different content. A Stream is deleted, when, ether a configurable amount of time has passed, since the last connection to the Stream had been established, or when the last connection to a Stream is closed. Connections to Streams can be closed via a request. A connection to a Stream is closed by the server after a configurable duration.
+    description: These operations are used to manage Streams. A Stream is defined by its Source, which is responsible for the Stream's content. Each connection to a Stream delivers the exact same content in the exact same order. Two Streams created from the same Source may have a different content. A Stream is deleted, when, ether a configurable amount of time has passed, since the last connection to the Stream had been established, or when the last connection to a Stream is closed. Connections to Streams can be closed via a request. If not closed by the client the connection is closed by the server after a configurable duration.
 definitions:
     VersionResponse:
       type: object
@@ -31,31 +31,39 @@ definitions:
           type: string
           format: date-time
           example: 2019-03-07 19:51:58
+    StreamType:
+      description: The general type of the Stream. 
+      type: string
     StreamSupplierDescription:
       type: object
+      description: The generic description of a Stream.
       required:
         - type
-        - charset
+      discriminator: type
       properties:
         type:
-          description: The general type of the Stream.
-          type: integer
-        charset:
-          description: The charset, the created Stream is limited to.
-          type: array
-          items:
-            type: integer
-          example: [97, 98, 99, 100]
+          $ref: "#/definitions/StreamType"
+    Random:
+      allOf:
+        - $ref: "#/definitions/StreamSupplierDescription"
+        - type: object
+          properties:
+            charset:
+              description: The charset, the created Stream is limited to.
+              type: array
+              items:
+                type: integer
+              example: [97, 98, 99, 100]
+          required:
+            - charset
     StreamID:
       type: integer
       format: int64
-      description: A unique identifier of a Stream.
-      example: 12941492147898191753
+      example: 2797600008095813476
     StreamConnectionID:
       type: integer
       format: int64
-      description: A unique identifier of a connectio to a Stream.
-      example: 12941492147898191754
+      example: 8599217406194641707
 paths:
   /version:
     get:
@@ -75,7 +83,9 @@ paths:
       tags:
         - stream management
       summary: Creates a Stream.
-      description: Creates a Stream, that fullfills the given requirements.
+      description: "Creates a Stream, that fullfills the given requirements. This initialization defines the structure of the Stream's values. The client should keep this in mind, when requesting the Stream's content at `GET /stream/websocket/{id}`. The Stream's value's structures are defined as follows depending on the Stream's `type`:
+
+         * `Random` : integer (golang: rune)"
       parameters:
         - name: Description
           in: body
@@ -88,7 +98,7 @@ paths:
           schema:
             $ref: "#/definitions/StreamID"
         501:
-          description: The server doesn't know the requested stream-type.
+          description: The server doesn't know the requested `type`.
   /stream/{id}:
     get:
       tags:
@@ -101,8 +111,8 @@ paths:
           required: true
           type: integer
           format: int64
-          description: A uinque identifier of a Stream.
-          example: 12941492147898191753
+          description: "`StreamID`"
+          example: 2797600008095813476
       responses:
         200:
           description: The requested Stream was found. The connection has been opened.
@@ -121,8 +131,27 @@ paths:
           required: true
           type: integer
           format: int64
-          description: A unique identifier of a connection to a Stream.
-          example: 12941492147898191754
+          description: "`StreamConnectionID`"
+          example: 8599217406194641707
       responses:
         200:
           description: The described connection was ether closed, or it didn't exist.
+  /stream/websocket/{id}:
+    get:
+      tags:
+      - stream management
+      summary: Establishes a websocket-connection, which enables the client to read the Stream's values.
+      description: "The json-encoded websocket-connection enables the client to read the Stream's values. Those value's nature depends on the underlying `type` of the Stream as defined at `POST /stream`. The server can't just send with a fixed bandwith, since the required speed depends on the client. Thus, the client must send messages containing a positive integer `amount` in order to request the transfer of `amount` values from the Stream to the client. This communication may be asynchronous. The websocket-connection may be closed by the client without preceding notification. The server will close the connection, after a configurable timeout has passed, or if the requested Stream-connection was closed by timeout or due to a client's request."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int64
+          description: "`StreamConnectionID`"
+          example: 8599217406194641707
+      responses:
+        101:
+          description: There is a connection with the given StreamConnectionID. A websocket-connection will be established.
+        404:
+          description: There is no connection with the given StreamConnectionID.

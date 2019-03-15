@@ -23,7 +23,7 @@ var (
 type StreamSupplier interface {
 	StreamSource
 	// ID returns a unique identifier
-	ID() uint64
+	ID() int64
 }
 
 // StreamSource represents a source of Streams
@@ -39,7 +39,7 @@ type StreamSource interface {
 type Stream interface {
 	UnregisteredStream
 	// ID returns a unique identifier
-	ID() uint64
+	ID() int64
 }
 
 // UnregisteredStream is a wrapper for a channel of Characters. The
@@ -60,26 +60,26 @@ type Character interface {
 
 type streamSupplier struct {
 	StreamSource
-	id      uint64
+	id      int64
 	connect chan bool
 }
 
 type streamWrapper struct {
 	UnregisteredStream
-	id         uint64
-	supplierID uint64
+	id         int64
+	supplierID int64
 }
 
-var suppliers map[uint64]*streamSupplier
+var suppliers map[int64]*streamSupplier
 var suplm sync.RWMutex
 
-var streams map[uint64]*streamWrapper
+var streams map[int64]*streamWrapper
 var strm sync.RWMutex
 
 func init() {
-	suppliers = make(map[uint64]*streamSupplier)
+	suppliers = make(map[int64]*streamSupplier)
 	suplm = sync.RWMutex{}
-	streams = make(map[uint64]*streamWrapper)
+	streams = make(map[int64]*streamWrapper)
 	strm = sync.RWMutex{}
 	rand.Seed(time.Now().UTC().UnixNano())
 }
@@ -89,8 +89,8 @@ func init() {
 // ether no Instance is requested from this source within
 // config.StreamBase.SupplierTimeout, or at least one Instance has been opened
 // and all Instances were closed again since then
-func Register(source StreamSource) (id uint64) {
-	id = rand.Uint64()
+func Register(source StreamSource) (id int64) {
+	id = rand.Int63()
 	s := &streamSupplier{
 		StreamSource: source,
 		id:           id,
@@ -106,12 +106,12 @@ func Register(source StreamSource) (id uint64) {
 // Open returns the id of a new Instance of the StreamSupplier with the given id
 // or returns an ErrNoSuchSupplier, if the id is invalid. The Stream is closed
 // at latest config.StreamBase.StreamTimeout after it was opened
-func Open(supplierID uint64) (streamID uint64, err error) {
+func Open(supplierID int64) (streamID int64, err error) {
 	supl := readSupplier(supplierID)
 	if supl == nil {
 		return 0, ErrNoSuchSupplier
 	}
-	streamID = rand.Uint64()
+	streamID = rand.Int63()
 	s := &streamWrapper{
 		UnregisteredStream: supl.Instance(),
 		id:                 streamID,
@@ -128,22 +128,22 @@ func Open(supplierID uint64) (streamID uint64, err error) {
 	}()
 	supl.connect <- true
 	// close on timeout
-	go time.AfterFunc(config.StreamBase.StreamTimeout, func() {
+	time.AfterFunc(config.StreamBase.StreamTimeout, func() {
 		Close(s.ID())
 	})
 	return
 }
 
-// Get returns the Stream with the given id. Get returns nil, if there is no
-// stream
-func Get(streamID uint64) Stream {
+// Get returns the Stream with the given id. Get returns !ok if there is
+// no such stream
+func Get(streamID int64) (stream Stream, ok bool) {
 	return readStream(streamID)
 }
 
 // Close closes and deletes the Stream with the given id
-func Close(streamID uint64) {
-	s := readStream(streamID)
-	if s != nil {
+func Close(streamID int64) {
+	s, ok := readStream(streamID)
+	if ok && s != nil {
 		su := readSupplier(s.supplierID)
 		if su != nil {
 			su.connect <- false
@@ -179,50 +179,50 @@ func manageUnregistration(supplier *streamSupplier) {
 	}
 }
 
-func readSupplier(id uint64) (supplier *streamSupplier) {
+func readSupplier(id int64) (supplier *streamSupplier) {
 	suplm.RLock()
 	supplier = suppliers[id]
 	suplm.RUnlock()
 	return
 }
 
-func writeSupplier(id uint64, supplier *streamSupplier) {
+func writeSupplier(id int64, supplier *streamSupplier) {
 	suplm.Lock()
 	suppliers[id] = supplier
 	suplm.Unlock()
 	return
 }
 
-func deleteSupplier(id uint64) {
+func deleteSupplier(id int64) {
 	suplm.Lock()
 	delete(suppliers, id)
 	suplm.Unlock()
 }
 
-func readStream(id uint64) (stream *streamWrapper) {
+func readStream(id int64) (stream *streamWrapper, ok bool) {
 	strm.RLock()
-	stream = streams[id]
+	stream, ok = streams[id]
 	strm.RUnlock()
 	return
 }
 
-func writeStream(id uint64, stream *streamWrapper) {
+func writeStream(id int64, stream *streamWrapper) {
 	strm.Lock()
 	streams[id] = stream
 	strm.Unlock()
 	return
 }
 
-func deleteStream(id uint64) {
+func deleteStream(id int64) {
 	strm.Lock()
 	delete(streams, id)
 	strm.Unlock()
 }
 
-func (s *streamSupplier) ID() uint64 {
+func (s *streamSupplier) ID() int64 {
 	return s.id
 }
 
-func (s *streamWrapper) ID() uint64 {
+func (s *streamWrapper) ID() int64 {
 	return s.id
 }

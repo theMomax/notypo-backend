@@ -26,5 +26,6 @@ func main() {
 }
 
 func serve(ctx *cli.Context) {
+	api.Register()
 	api.Serve()
 }

@@ -2,6 +2,9 @@ package communication
 
 import (
 	"net/http"
+	"time"
+
+	"github.com/theMomax/notypo-backend/config"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -14,6 +17,9 @@ import (
 type HandleStreamFunc func(params map[string]string) (status int, stream streams.Stream)
 
 var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
@@ -24,11 +30,9 @@ var upgrader = websocket.Upgrader{
 // underlying channel (provided by the handler via the streams.Stream interface)
 // is closed. The server only sends the Stream's values, when requested. I.e.
 // the client must send a JSON-encoded uint value, which represents the number
-// of requested streams.Characters. After the websocket-connection was closed,
-// the server answers the initial GET request with an appropriate status-code.
+// of requested streams.Characters.
 // The streams.Characters are sent in JSON format. The actual representation
-// depends on the underlying streams.StreamSource and how that one was
-// initialized
+// depends on the underlying streams.StreamSource and how it was initialized
 func Stream(path string, handler HandleStreamFunc) {
 	router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -43,40 +47,43 @@ func Stream(path string, handler HandleStreamFunc) {
 			return
 		}
 		requests := make(chan uint, 5)
-		closed := make(chan bool, 0)
+		closed := make(chan bool, 1)
 		go func() {
 			for {
-				select {
-				case <-closed:
+				i := uint(0)
+				err := conn.ReadJSON(&i)
+				if err != nil {
+					closed <- true
 					close(closed)
+					close(requests)
 					return
-				default:
-					i := uint(0)
-					err := conn.ReadJSON(&i)
-					if err != nil {
-						requests <- i
-					}
 				}
+				requests <- i
 			}
 		}()
 	outer:
 		for {
-			n := <-requests
-			for i := 0; i < int(n); i++ {
-				c, ok := <-stream.Channel()
-				if !ok {
-					break outer
-				}
-				err := conn.WriteJSON(c)
-				if err != nil {
-					status = http.StatusInternalServerError
-					break outer
+			select {
+			case <-time.After(config.StreamBase.StreamTimeout):
+				conn.Close()
+				break outer
+			case <-closed:
+				conn.Close()
+				break outer
+			case n := <-requests:
+				for i := 0; i < int(n); i++ {
+					c, ok := <-stream.Channel()
+					if !ok {
+						conn.Close()
+						break outer
+					}
+					err := conn.WriteJSON(c)
+					if err != nil {
+						conn.Close()
+						break outer
+					}
 				}
 			}
 		}
-		closed <- true
-		close(requests)
-		conn.Close()
-		w.WriteHeader(status)
-	}).Methods("GET")
+	})
 }

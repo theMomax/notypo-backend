@@ -40,3 +40,4 @@ build: ## Builds the server. Make sure to set your GOOS and GOARCH to match your
 
 docs: ## Opens a browser window containing the api's swagger documentation. This command requires go-swagger.
 	swagger serve swagger.yml
+	#docker run -p 8080:80 -e SPEC_URL=file://$(PWD)/swagger.yml redocly/redoc

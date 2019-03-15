@@ -3,8 +3,6 @@ package streams
 import (
 	"math/rand"
 	"time"
-
-	"github.com/tevino/abool"
 )
 
 type randomCharStreamSource struct {
@@ -15,7 +13,7 @@ type randomCharStreamSource struct {
 type basicUnregisteredCharStream struct {
 	channel chan Character
 	rand    *rand.Rand
-	closed  *abool.AtomicBool
+	done    chan bool
 }
 
 // NewRandomCharStreamSource creates a StreamSource, which pipes the same
@@ -35,13 +33,19 @@ func (r *randomCharStreamSource) Instance() UnregisteredStream {
 	b := &basicUnregisteredCharStream{
 		channel: make(chan Character),
 		rand:    rand.New(rand.NewSource(r.seed)),
-		closed:  abool.New(),
+		done:    make(chan bool),
 	}
 	// pipe random Characters into the channel, until Close() is called
 	go func() {
-		for !b.closed.IsSet() {
+	outer:
+		for {
 			c := r.charset[b.rand.Intn(len(r.charset))]
-			b.channel <- c
+			select {
+			case b.channel <- c:
+			case <-b.done:
+				close(b.done)
+				break outer
+			}
 		}
 		close(b.channel)
 	}()
@@ -53,5 +57,5 @@ func (b *basicUnregisteredCharStream) Channel() <-chan Character {
 }
 
 func (b *basicUnregisteredCharStream) Close() {
-	b.closed.Set()
+	b.done <- true
 }
