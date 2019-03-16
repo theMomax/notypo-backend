@@ -3,7 +3,7 @@ consumes:
 info:
   title: notypo streaming-api
   description: "The REST and Websocket api of the [notypo-game](https://www.github.com/theMomax/notypo). This documentation only addresses the functional part of the api. I.e. the **Responses** sections do not list default error codes like 400 and 500. This api allows CORS from a configurable list of URLs. The only `Content-Type` allowed is `application/json`."
-  version: alpha
+  version: v0.1
 paths: {}
 produces:
 - application/json
@@ -77,7 +77,7 @@ paths:
           schema:
             $ref: "#/definitions/VersionResponse"
         503:
-          description: This build is a test-build.
+          description: This build is a test- or development-build.
   /stream:
     post:
       tags:

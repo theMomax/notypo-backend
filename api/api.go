@@ -17,6 +17,15 @@ import (
 	"github.com/theMomax/notypo-backend/streams"
 )
 
+// paths
+const (
+	PathVersion                    = "/version"
+	PathCreateStream               = "/stream"
+	PathOpenStreamConnection       = "/stream/{id}"
+	PathCloseStreamConnection      = "/stream/{id}"
+	PathEstablishWebsocketToStream = "/stream/websocket/{id}"
+)
+
 // Serve starts the webserver which implements the api specified in this file
 func Serve() {
 	com.Serve()
@@ -25,15 +34,15 @@ func Serve() {
 // Register registers the api-functions specified in this file at the
 // http/websocket communication-unit
 func Register() {
-	com.Get("/version", version)
-	com.Post("/stream", createStream)
-	com.Get("/stream/{id}", openStream)
-	com.Delete("/stream/{id}", closeStream)
-	com.Stream("/stream/websocket/{id}", getStream)
+	com.Get(PathVersion, version)
+	com.Post(PathCreateStream, createStream)
+	com.Get(PathOpenStreamConnection, openStream)
+	com.Delete(PathCloseStreamConnection, closeStream)
+	com.Stream(PathEstablishWebsocketToStream, getStream)
 }
 
 // -----------------------------------------------------------------------------
-// GET /version
+// GET PathVersion
 // -----------------------------------------------------------------------------
 
 // VersionResponse holds general information about this program
@@ -55,7 +64,7 @@ func version(params map[string]string) (status int, res *VersionResponse) {
 }
 
 // -----------------------------------------------------------------------------
-// POST /stream
+// POST PathCreateStream
 // -----------------------------------------------------------------------------
 
 const (
@@ -105,7 +114,7 @@ func (c character) Rune() rune {
 }
 
 // -----------------------------------------------------------------------------
-// GET /stream/{id}
+// GET PathOpenStreamConnection
 // -----------------------------------------------------------------------------
 
 // StreamID (response)
@@ -124,7 +133,7 @@ func openStream(params map[string]string) (status int, res StreamID) {
 }
 
 // -----------------------------------------------------------------------------
-// DELETE /stream/{id}
+// DELETE PathCloseStreamConnection
 // -----------------------------------------------------------------------------
 
 func closeStream(req interface{}, params map[string]string) (status int, res interface{}) {
@@ -137,7 +146,7 @@ func closeStream(req interface{}, params map[string]string) (status int, res int
 }
 
 // -----------------------------------------------------------------------------
-// GET/WEBSOCKET /stream/websocket/{id}
+// GET/WEBSOCKET PathEstablishWebsocketToStream
 // -----------------------------------------------------------------------------
 
 func getStream(params map[string]string) (status int, stream streams.Stream) {
