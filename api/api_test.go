@@ -125,7 +125,7 @@ func TestStreamProcedureWebsocket404(t *testing.T) {
 	r.ServeHTTP(resp, req)
 	assert.Equal(t, 200, resp.Code)
 
-	<-time.After(10 * time.Millisecond)
+	<-time.After(20 * time.Millisecond)
 	assert.Equal(t, ngr, runtime.NumGoroutine())
 }
 
@@ -161,7 +161,7 @@ func TestStreamProcedureWithoutConnection(t *testing.T) {
 	var streamID int64
 	assert.NoError(t, json.Unmarshal(resp.Body.Bytes(), &streamID))
 
-	<-time.After(10 * time.Millisecond)
+	<-time.After(20 * time.Millisecond)
 	assert.Equal(t, ngr, runtime.NumGoroutine())
 }
 
@@ -194,7 +194,7 @@ func TestStreamProcedureWithoutConnectionClosing(t *testing.T) {
 		var connectionID int64
 		assert.NoError(t, json.Unmarshal(resp.Body.Bytes(), &connectionID))
 
-		<-time.After(10 * time.Millisecond)
+		<-time.After(20 * time.Millisecond)
 		assert.Equal(t, ngr, runtime.NumGoroutine())
 	}
 }
@@ -245,7 +245,7 @@ func TestStreamProcedureWithoutWebsocketClosing(t *testing.T) {
 		r.ServeHTTP(resp, req)
 		assert.Equal(t, 200, resp.Code)
 
-		<-time.After(10 * time.Millisecond)
+		<-time.After(20 * time.Millisecond)
 		assert.Equal(t, ngr, runtime.NumGoroutine())
 	}
 }
@@ -298,7 +298,7 @@ func TestStreamProcedureWithoutWebsocketClosingButConnectionClosing(t *testing.T
 
 		assert.NoError(t, ws.WriteJSON(uint(3)))
 
-		<-time.After(10 * time.Millisecond)
+		<-time.After(20 * time.Millisecond)
 		assert.Equal(t, ngr, runtime.NumGoroutine())
 	}
 }
@@ -350,7 +350,7 @@ func TestStreamProcedure(t *testing.T) {
 		r.ServeHTTP(resp, req)
 		assert.Equal(t, 200, resp.Code)
 
-		<-time.After(10 * time.Millisecond)
+		<-time.After(20 * time.Millisecond)
 		assert.Equal(t, ngr, runtime.NumGoroutine())
 	}
 }
