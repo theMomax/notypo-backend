@@ -69,9 +69,9 @@ var router = mux.NewRouter()
 // Serve starts the REST-api and websocket server
 func Serve() {
 	http.ListenAndServe(config.Server.IP+":"+strconv.Itoa(config.Server.Port), handlers.CORS(
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "OPTIONS", "DELETE"}),
 		handlers.AllowedOrigins(config.Server.AllowedRequestOrigins),
-		handlers.AllowedHeaders([]string{"Content-Type"}),
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"}),
 	)(router))
 }
 

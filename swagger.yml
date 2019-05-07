@@ -3,7 +3,7 @@ consumes:
 info:
   title: notypo streaming-api
   description: "The REST and Websocket api of the [notypo-game](https://www.github.com/theMomax/notypo). This documentation only addresses the functional part of the api. I.e. the **Responses** sections do not list default error codes like 400 and 500. This api allows CORS from a configurable list of URLs. The only `Content-Type` allowed is `application/json`."
-  version: v0.1
+  version: development
 paths: {}
 produces:
 - application/json
@@ -34,6 +34,12 @@ definitions:
     StreamType:
       description: The general type of the Stream. 
       type: string
+      enum:
+        - Random
+    BasicCharacter:
+      description: "This is a single character (golang: rune)"
+      type: integer
+      example: 97
     StreamSupplierDescription:
       type: object
       description: The generic description of a Stream.
@@ -52,8 +58,7 @@ definitions:
               description: The charset, the created Stream is limited to.
               type: array
               items:
-                type: integer
-              example: [97, 98, 99, 100]
+                $ref: "#/definitions/BasicCharacter"
           required:
             - charset
     StreamID:
@@ -79,13 +84,25 @@ paths:
         503:
           description: This build is a test- or development-build.
   /stream:
+    get:
+      tags:
+       - stream management
+      summary: Provides a list of types of Streams.
+      description: "The returned list contains all `types` of Streams implemented by this api-version."
+      responses:
+        200:
+          description: The following types are implemented.
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/StreamType"
     post:
       tags:
         - stream management
       summary: Creates a Stream.
-      description: "Creates a Stream, that fullfills the given requirements. This initialization defines the structure of the Stream's values. The client should keep this in mind, when requesting the Stream's content at `GET /stream/websocket/{id}`. The Stream's value's structures are defined as follows depending on the Stream's `type`:
+      description: "Creates a Stream, that fullfills the given requirements. This initialization defines the structure of the Stream's values. The client should keep this in mind, when requesting the Stream's content at `GET /stream/websocket/{id}`. The Stream's value's structures are defined as follows depending on its `StreamType`:
 
-         * `Random` : integer (golang: rune)"
+         * `Random` : BasicCharacter"
       parameters:
         - name: Description
           in: body
@@ -97,6 +114,8 @@ paths:
           description: The information describing the type and properties of the requested Stream is valid. The Stream has been created successfully.
           schema:
             $ref: "#/definitions/StreamID"
+        400:
+          description: The given description does not fulfil the requirements of the given `type`.
         501:
           description: The server doesn't know the requested `type`.
   /stream/{id}:

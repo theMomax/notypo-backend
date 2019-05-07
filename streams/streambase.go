@@ -7,6 +7,7 @@ package streams
 
 import (
 	"errors"
+	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -107,6 +108,12 @@ func Register(source StreamSource) (id int64) {
 // or returns an ErrNoSuchSupplier, if the id is invalid. The Stream is closed
 // at latest config.StreamBase.StreamTimeout after it was opened
 func Open(supplierID int64) (streamID int64, err error) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 	supl := readSupplier(supplierID)
 	if supl == nil {
 		return 0, ErrNoSuchSupplier
@@ -137,11 +144,23 @@ func Open(supplierID int64) (streamID int64, err error) {
 // Get returns the Stream with the given id. Get returns !ok if there is
 // no such stream
 func Get(streamID int64) (stream Stream, ok bool) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 	return readStream(streamID)
 }
 
 // Close closes and deletes the Stream with the given id
 func Close(streamID int64) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 	s, ok := readStream(streamID)
 	if ok && s != nil {
 		su := readSupplier(s.supplierID)
@@ -154,6 +173,12 @@ func Close(streamID int64) {
 }
 
 func manageUnregistration(supplier *streamSupplier) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 	connections := 0
 	timeout := time.After(config.StreamBase.SupplierTimeout)
 	for {

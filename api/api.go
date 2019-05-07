@@ -4,8 +4,9 @@
 // registers all operations. The operations are listed below in the same order
 // as they are registered in the Serve function. The public constants and types
 // relevant to the operation are declared right above the actual function. The
-// private ones right below. The actual api is documented externally using
-// swagger. The comments in this document provide a developers-view
+// private ones and further dependencies right below. The actual api is
+// documented externally using swagger. The comments in this document provide a
+// developers-view
 package api
 
 import (
@@ -17,9 +18,13 @@ import (
 	"github.com/theMomax/notypo-backend/streams"
 )
 
+// Character is the interface, which defines a character for this api
+type Character streams.Character
+
 // paths
 const (
 	PathVersion                    = "/version"
+	PathStreamOptions              = "/stream"
 	PathCreateStream               = "/stream"
 	PathOpenStreamConnection       = "/stream/{id}"
 	PathCloseStreamConnection      = "/stream/{id}"
@@ -35,6 +40,7 @@ func Serve() {
 // http/websocket communication-unit
 func Register() {
 	com.Get(PathVersion, version)
+	com.Get(PathStreamOptions, streamOptions)
 	com.Post(PathCreateStream, createStream)
 	com.Get(PathOpenStreamConnection, openStream)
 	com.Delete(PathCloseStreamConnection, closeStream)
@@ -64,7 +70,7 @@ func version(params map[string]string) (status int, res *VersionResponse) {
 }
 
 // -----------------------------------------------------------------------------
-// POST PathCreateStream
+// GET PathStreamOptions
 // -----------------------------------------------------------------------------
 
 const (
@@ -80,11 +86,28 @@ const (
 // StreamSourceType is a code for a specific type of streams.StreamSource
 type StreamSourceType string
 
+// StreamOptionsResponse is a list of all StreamSourceTypes implemented by this
+// api-version
+type StreamOptionsResponse []StreamSourceType
+
+func streamOptions(params map[string]string) (status int, res StreamOptionsResponse) {
+	return http.StatusOK, StreamOptionsResponse{
+		Random,
+	}
+}
+
+// -----------------------------------------------------------------------------
+// POST PathCreateStream
+// -----------------------------------------------------------------------------
+
+// BasicCharacter is the most basic implementation of streams.Character
+type BasicCharacter rune
+
 // StreamSupplierDescription (request) specifies the type and properties of a
 // StreamSupplier
 type StreamSupplierDescription struct {
 	Type    StreamSourceType `json:"type"`
-	Charset []rune           `json:"charset"`
+	Charset []BasicCharacter `json:"charset"`
 }
 
 // StreamSupplierID (response)
@@ -96,20 +119,22 @@ func createStream(req *StreamSupplierDescription, params map[string]string) (sta
 	case Random:
 		charset := make([]streams.Character, len(req.Charset))
 		for i, c := range req.Charset {
-			charset[i] = character(c)
+			charset[i] = c
 		}
 		source = streams.NewRandomCharStreamSource(charset)
 	default:
 		return http.StatusNotImplemented, nil
+	}
+	if source == nil {
+		return http.StatusBadRequest, nil
 	}
 	id := streams.Register(source)
 	res = &id
 	return http.StatusOK, res
 }
 
-type character rune
-
-func (c character) Rune() rune {
+// Rune returns the character as a rune
+func (c BasicCharacter) Rune() rune {
 	return rune(c)
 }
 

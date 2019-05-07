@@ -200,11 +200,11 @@ func TestStreamProcedureWithoutConnectionClosing(t *testing.T) {
 }
 
 func TestStreamProcedureWithoutWebsocketClosing(t *testing.T) {
-	config.StreamBase.StreamTimeout = 5 * time.Millisecond
+	config.StreamBase.StreamTimeout = 10 * time.Millisecond
 	config.StreamBase.SupplierTimeout = time.Hour
 	s := httptest.NewServer(r)
 	defer s.Close()
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 550; i++ {
 		ngr := runtime.NumGoroutine()
 
 		body := bytes.NewBuffer(make([]byte, 0))
@@ -245,7 +245,7 @@ func TestStreamProcedureWithoutWebsocketClosing(t *testing.T) {
 		r.ServeHTTP(resp, req)
 		assert.Equal(t, 200, resp.Code)
 
-		<-time.After(20 * time.Millisecond)
+		<-time.After(30 * time.Millisecond)
 		assert.Equal(t, ngr, runtime.NumGoroutine())
 	}
 }
